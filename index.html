@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Decode the Drawings Competition</title>
+        <link rel="stylesheet" href="./css/styles.css" />
+        <script src="js/main.js" type="module"></script>
+    </head>
+
+    <body>
+
+        <!-- input selectors -->
+        <div class="flexrow">
+            <label for="videos">Video Input</label>
+            <select name="videos" id="videos">
+                <option value="0" disabled selected>Choose a Video</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+            </select>
+
+            <label for="datafiles">Data File Input</label>
+            <select name="datafiles" id="datafiles">
+                <option value="0" disabled selected>Choose a Data File</option>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+            </select>
+        </div>
+
+        <!-- decoding settings -->
+        <div>
+            <div class="flexrow">
+                <label for="smoothing">Smoothing</label>
+                <input id="smoothing" type="number" value="0.9" step="0.02" min="0" max="0.98" />
+
+                <label for="zthresh">Z Threshold</label>
+                <input id="zthresh" type="number" value="2.9" step="0.05" />
+            </div>
+
+            <div class="flexrow">
+                <label for="focalLengthX">Focal Length X</label>
+                <input id="focalLengthX" type="number" value="605" step="5" />
+
+                <label for="focalLengthY">Focal Length Y</label>
+                <input id="focalLengthY" type="number" value="655" step="5" />
+            </div>
+
+            <div class="flexrow">
+                <label for="opticalCentreX">Optical Centre X</label>
+                <input id="opticalCentreX" type="number" value="680" step="1" />
+
+                <label for="opticalCentreY">Optical Centre Y</label>
+                <input id="opticalCentreY" type="number" value="451" step="1" />
+            </div>
+
+            <div class="flexrow">
+                <label for="tiltXFactor">Tilt X Factor</label>
+                <input id="tiltXFactor" type="number" value="-150" step="50" />
+
+                <label for="tiltYFactor">Tilt Y Factor</label>
+                <input id="tiltYFactor" type="number" value="0" step="5" />
+            </div>
+        </div>
+
+        <!-- test for circle fit -->
+        <div class="flexrow">
+            <label for="checkFitCircle">Check Circle Fit?</label>
+            <input id="checkFitCircle" type="checkbox" />
+        </div>
+
+        <!-- decoder output -->
+        <div>
+            <div class="flexrow">
+                <canvas id="drawingCanvas" width="700" height="700" style="border: 1px solid"></canvas>
+                <canvas id="yDistCanvas" width="200" height="700" style="border: 1px solid"></canvas>
+                <div>
+                    <textarea id="ballCoords" cols="35" rows="45"></textarea><br />
+                    <button id="downloadBallCoordsJS" disabled>Download Ball Coords Data File</button>
+                </div>
+                <div>
+                    <textarea id="xyCoords" cols="35" rows="45"></textarea><br />
+                    <button id="downloadXYCoordsBtn" disabled>Download XY Coords TXT</button>
+                </div>
+            </div>
+            <canvas id="xDistCanvas" width="700" height="200" style="border: 1px solid"></canvas>
+        </div>
+
+        <!-- input video preview -->
+        <canvas id="inputCanvas"></canvas>
+
+    </body>
+
+</html>

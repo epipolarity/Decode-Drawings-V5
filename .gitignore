@@ -5,11 +5,8 @@
 **.bak
 
 js/ballDetectorAngular.js
-js/drawingDecoderV5.js
-js/main.js
-js/utils.js
-index.html
 
 data/**
 videos/**
 working_out/**
+results/**

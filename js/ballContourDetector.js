@@ -1,17 +1,21 @@
+import { objectToJSConst, round, averagePoint } from './utils.js';
+
 const CHANNELS = ["Red", "Green", "Blue"];
 
 // Ball detector based heavily on Radu's Colored Marker Detector code: https://www.youtube.com/watch?v=jy-Mxbt0zww
 export default class BallContourDetector {
 
-    constructor(activePoints = 15, colorThresholds = [40, 40, 40]) {
+    constructor(activePoints = 15, colorThresholds = [40, 40, 40], precision = 1) {
+        this.collector = [];
         this.activePoints = activePoints;
         this.colorThresholds = colorThresholds;
+        this.precision = precision;
     }
 
 
     detect(imgData) {
 
-        const rgbPoints = CHANNELS.map(() => []);                       // arrays to hold pixels that the criteria for each color
+        const rgbPoints = CHANNELS.map(() => []);                       // arrays to hold pixels that meet the criteria for each color
 
         for (let i = 0; i < imgData.data.length; i += 4) {              // get the r g b values for each pixel
 
@@ -31,10 +35,10 @@ export default class BallContourDetector {
 
         }
 
-        const centroids = rgbPoints.map(channelPoints => this.#averagePoints(channelPoints));
+        const centroids = rgbPoints.map(channelPoints => averagePoint(channelPoints));
         const radii = rgbPoints.map(channelPoints => Math.sqrt(channelPoints.length) / 1.8);
 
-        return {
+        const balls = {
             contours: {
                 red: this.#refinePoints(this.#initPoints(centroids[0], radii[0]), imgData, 0),
                 green: this.#refinePoints(this.#initPoints(centroids[1], radii[1]), imgData, 1),
@@ -42,6 +46,17 @@ export default class BallContourDetector {
             }
         }
 
+        this.collector.push(balls);
+
+        return balls;
+
+    }
+
+
+
+    // return the string representation of the collector - a js module with single 'balls' const export
+    toString() {
+        return objectToJSConst(this.collector, 'balls');
     }
 
 
@@ -65,7 +80,7 @@ export default class BallContourDetector {
 
         while (iteration < iterations && !converged) {
 
-            const meanPoint = this.#averagePoints(refinedPoints);
+            const meanPoint = averagePoint(refinedPoints);
             converged = true;
 
             for (let i = 0; i < refinedPoints.length; i++) {
@@ -109,7 +124,10 @@ export default class BallContourDetector {
 
         }
 
-        return refinedPoints;
+        return refinedPoints.map(point => ({
+            x: round(point.x, this.precision),
+            y: round(point.y, this.precision)
+        }));
 
     }
 
@@ -127,18 +145,4 @@ export default class BallContourDetector {
     }
 
 
-    // calculate the mean XY point of an array of XY points
-    #averagePoints(points) {
-        const center = { x: 0, y: 0 };
-        for (const point of points) {
-            center.x += point.x;
-            center.y += point.y;
-        }
-        center.x /= points.length;
-        center.y /= points.length;
-        return {
-            x: center.x,
-            y: center.y
-        };
-    }
 }
