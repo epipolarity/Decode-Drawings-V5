@@ -28,6 +28,7 @@ video.addEventListener("loadeddata", () => {
     clearTextareas();                               // clear previous output
     clearDrawingContext();
 
+    inputCanvas.style.display = "block";
     inputCanvas.width = video.videoWidth;
     inputCanvas.height = video.videoHeight;
 
@@ -81,7 +82,7 @@ datafiles.addEventListener("change", (e) => {
 });
 
 
-[smoothing, zthresh, focalLengthX, focalLengthY, opticalCentreX, opticalCentreY,
+[smoothing, zthresh, checkZ, focalLengthX, focalLengthY, opticalCentreX, opticalCentreY, k1,
     tiltXFactor, tiltYFactor, checkFitCircle].forEach(element => element.addEventListener("change", () => {
         if (datafileMode) {
             drawDatafile();
@@ -137,7 +138,7 @@ function drawDatafile() {
             drawingCtx.restore();
         }
 
-        drawXYDistributions(drawingDecoder.collector);
+        drawXYDistributions(drawingDecoder.collector, drawingDecoder.rejected);
 
     }).catch(error => {
 
@@ -149,10 +150,7 @@ function drawDatafile() {
 }
 
 
-function drawXYDistributions(points) {
-
-    let minZ = Number.MAX_VALUE;
-    let maxZ = -Number.MAX_VALUE;
+function drawXYDistributions(points, rejectedPoints = [], zScale = 10) {
 
     const xDistCtx = xDistCanvas.getContext("2d");
     const yDistCtx = yDistCanvas.getContext("2d");
@@ -163,22 +161,46 @@ function drawXYDistributions(points) {
     yDistCtx.fillStyle = "white";
     yDistCtx.fillRect(0, 0, yDistCanvas.width, yDistCanvas.height);
 
-    for (let i = 0; i < points.length; i++) {
-        if (points[i].z > maxZ) maxZ = points[i].z;
-        if (points[i].z < minZ) minZ = points[i].z;
-    }
-
     xDistCtx.fillStyle = "black";
     yDistCtx.fillStyle = "black";
 
     for (let i = 0; i < points.length; i++) {
         xDistCtx.beginPath();
-        xDistCtx.rect(points[i].x, map(points[i].z, minZ, maxZ, 0, xDistCanvas.height), 2, 2);
+        xDistCtx.rect(points[i].x, map(points[i].z, 0, zScale, 0, xDistCanvas.height), 2, 2);
         xDistCtx.fill();
 
         yDistCtx.beginPath();
-        yDistCtx.rect(map(points[i].z, minZ, maxZ, 0, yDistCanvas.width), points[i].y, 2, 2);
+        yDistCtx.rect(map(points[i].z, 0, zScale, 0, yDistCanvas.width), points[i].y, 2, 2);
         yDistCtx.fill();
+    }
+
+    xDistCtx.fillStyle = "red";
+    yDistCtx.fillStyle = "red";
+
+    for (let i = 0; i < rejectedPoints.length; i++) {
+        xDistCtx.beginPath();
+        xDistCtx.rect(rejectedPoints[i].x, map(rejectedPoints[i].z, 0, zScale, 0, xDistCanvas.height), 2, 2);
+        xDistCtx.fill();
+
+        yDistCtx.beginPath();
+        yDistCtx.rect(map(rejectedPoints[i].z, 0, zScale, 0, yDistCanvas.width), rejectedPoints[i].y, 2, 2);
+        yDistCtx.fill();
+    }
+
+    if (checkZ.checked) {
+        xDistCtx.strokeStyle = "red";
+        xDistCtx.lineWidth = "3";
+        xDistCtx.beginPath();
+        xDistCtx.moveTo(0, map(parseFloat(zthresh.value), 0, zScale, 0, xDistCanvas.height));
+        xDistCtx.lineTo(xDistCanvas.width, map(parseFloat(zthresh.value), 0, zScale, 0, xDistCanvas.height));
+        xDistCtx.stroke();
+
+        yDistCtx.strokeStyle = "red";
+        yDistCtx.lineWidth = "3";
+        yDistCtx.beginPath();
+        yDistCtx.moveTo(map(parseFloat(zthresh.value), 0, zScale, 0, yDistCanvas.width), 0);
+        yDistCtx.lineTo(map(parseFloat(zthresh.value), 0, zScale, 0, yDistCanvas.width), yDistCanvas.height);
+        yDistCtx.stroke();
     }
 
 }
@@ -227,22 +249,32 @@ function drawContours(contours) {
 
 // factory function to create a DrawingDecoder of the selected version
 function createDecoder() {
-    return new DrawingDecoder(
-        parseFloat(smoothing.value),
-        parseFloat(zthresh.value),
-        {
-            x: parseFloat(focalLengthX.value),
-            y: parseFloat(focalLengthY.value)
-        },
-        {
-            x: parseFloat(opticalCentreX.value),
-            y: parseFloat(opticalCentreY.value)
-        },
-        {
-            x: parseFloat(tiltXFactor.value),
-            y: parseFloat(tiltYFactor.value)
-        }
 
+    const smoothingValue = parseFloat(smoothing.value);
+    const zThreshhold = parseFloat(zthresh.value);
+    const checkZThreshold = checkZ.checked;
+    const focalLength = {
+        x: parseFloat(focalLengthX.value),
+        y: parseFloat(focalLengthY.value)
+    };
+    const opticalCentre = {
+        x: parseFloat(opticalCentreX.value),
+        y: parseFloat(opticalCentreY.value)
+    };
+    const k1Coefficient = parseFloat(k1.value);
+    const tiltFactor = {
+        x: parseFloat(tiltXFactor.value),
+        y: parseFloat(tiltYFactor.value)
+    };
+
+    return new DrawingDecoder(
+        smoothingValue,
+        zThreshhold,
+        checkZThreshold,
+        focalLength,
+        opticalCentre,
+        k1Coefficient,
+        tiltFactor
     );
 }
 

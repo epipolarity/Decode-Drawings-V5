@@ -1,4 +1,5 @@
 import { pointsArrayToTextLines, map, cartesianToAngular, averagePoint, distance } from "./utils.js";
+import { undistortPoint } from "./undistort.js";
 
 const expectedAngles = {
     red: -Math.PI / 2,
@@ -15,18 +16,25 @@ export default class DrawingDecoder {
     constructor(
         smooth = 0,
         zThreshold = 0,
+        checkZ = false,
         focalLength = { x: 615, y: 615 },
         opticalCentre = { x: 640, y: 360 },
+        k1 = 0,
         tiltFactor = { x: 0, y: 0 }
     ) {
 
         this.collector = [];                // collector stores the decoded XY image coordinates for later export
+        this.rejected = [];                 // points that were rejected due to zThreshold
 
         this.smooth = smooth;               // smoothing factor (0-1)
         this.zThreshold = zThreshold;       // z-threshold for deciding if pen is in contact with paper
 
+
+        this.checkZ = checkZ;
+
         this.focalLength = focalLength;
         this.opticalCentre = opticalCentre;
+        this.k1 = k1;
         this.tiltFactor = tiltFactor;
 
     }
@@ -41,9 +49,9 @@ export default class DrawingDecoder {
             const contour = contours[ballKey];
             balls[ballKey] = {};
             balls[ballKey].contour = contour.map(point => cartesianToAngular(
-                point.x, point.y,
-                this.focalLength.x, this.focalLength.y,
-                this.opticalCentre.x, this.opticalCentre.y
+                undistortPoint(point, this.opticalCentre, this.k1),
+                this.focalLength,
+                this.opticalCentre
             ));
             balls[ballKey].centroid = averagePoint(balls[ballKey].contour);
             balls[ballKey].radius = balls[ballKey].contour.reduce((sum, point) => sum + distance(point, balls[ballKey].centroid), 0) / balls[ballKey].contour.length;
@@ -91,23 +99,22 @@ export default class DrawingDecoder {
             z = z * (1 - this.smooth) + this.lastPosition.z * this.smooth;
 
             // if z exceeds threshold stop drawing - pen is off paper
-            if (z > this.zThreshold) {
+            if (this.checkZ && z > this.zThreshold) {
                 this.lastPosition = null;
+                this.rejected.push({ x: Math.round(x), y: Math.round(y), z });
                 return;
             }
 
+            // store x and y canvas integer pixel coordinates
+            this.collector.push({ x: Math.round(x), y: Math.round(y), z });
+
             // draw from last position to current position
             ctx.save();
-            // console.log(z);
-            // ctx.strokeStyle = `rgb(${map(z, 1, 2, 0, 255)},0,${map(z, 1, 2, 255, 0)})`;
             ctx.beginPath();
             ctx.moveTo(this.lastPosition.x, this.lastPosition.y);
             ctx.lineTo(x, y);
             ctx.stroke();
             ctx.restore();
-
-            // store x and y canvas integer pixel coordinates
-            this.collector.push({ x: Math.round(x), y: Math.round(y), z });
 
         }
 

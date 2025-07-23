@@ -64,7 +64,10 @@ function distance(p1, p2) {
 }
 
 
-function cartesianToAngular(x, y, fx, fy, cx, cy) {
+function cartesianToAngular(point, focalLength, opticalCentre) {
+    const { x, y } = point;
+    const { x: fx, y: fy } = focalLength;
+    const { x: cx, y: cy } = opticalCentre;
     return {
         x: Math.atan((x - cx) / fx),
         y: Math.atan((y - cy) / fy)
