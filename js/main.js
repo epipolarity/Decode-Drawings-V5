@@ -9,9 +9,6 @@ let datafileMode = false;       // is input a video or data file
 
 let videoPlaying = false;
 
-let detectorTextUpdateInterval; // interval ids for updating textareas with output during video processing
-let decoderTextUpdateInterval;
-
 let ballDetector;               // class to detect balls in input video
 let drawingDecoder;             // class to decode drawing based on detected ball positions/sizes
 
@@ -35,10 +32,6 @@ video.addEventListener("loadeddata", () => {
     ballDetector = new BallContourDetector();
     drawingDecoder = createDecoder();               // create decoder instance based on selected version
 
-    // set up intervals to update textarea outputs
-    decoderTextUpdateInterval = setInterval(() => updateText(xyCoords, drawingDecoder), 500);
-    detectorTextUpdateInterval = setInterval(() => updateText(ballCoords, ballDetector), 500);
-
     videoPlaying = true;
     processVideoFrame();                            // start processing
 });
@@ -47,6 +40,8 @@ video.addEventListener("loadeddata", () => {
 // video finished so enable download buttons
 video.addEventListener("ended", () => {
     videoPlaying = false;
+    updateText(ballCoords, ballDetector);
+    updateText(xyCoords, drawingDecoder);
     downloadReady();
 });
 
@@ -138,7 +133,7 @@ function drawDatafile() {
             drawingCtx.restore();
         }
 
-        drawXYDistributions(drawingDecoder.collector, drawingDecoder.rejected);
+        drawZDistributions(drawingDecoder.collector, drawingDecoder.rejected);
 
     }).catch(error => {
 
@@ -150,56 +145,58 @@ function drawDatafile() {
 }
 
 
-function drawXYDistributions(points, rejectedPoints = [], zScale = 10) {
+function drawZPoints(points, canvas, {
+    colour = "black",
+    axis = "x",
+    scale = 1,
+    clear = true
+} = {}) {
+
+    const ctx = canvas.getContext("2d");
+
+    if (clear) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.fillStyle = colour;
+
+    for (const point of points) {
+        ctx.beginPath();
+        if (axis === "x") {
+            ctx.rect(point.x, map(point.z, 0, scale, 0, canvas.height), 2, 2);
+        } else {
+            ctx.rect(map(point.z, 0, scale, 0, canvas.width), point.y, 2, 2);
+        }
+        ctx.fill();
+    }
+
+}
+
+
+function drawZDistributions(points, rejectedPoints = [], scale = 10) {
 
     const xDistCtx = xDistCanvas.getContext("2d");
     const yDistCtx = yDistCanvas.getContext("2d");
 
-    xDistCtx.fillStyle = "white";
-    xDistCtx.fillRect(0, 0, xDistCanvas.width, xDistCanvas.height);
-
-    yDistCtx.fillStyle = "white";
-    yDistCtx.fillRect(0, 0, yDistCanvas.width, yDistCanvas.height);
-
-    xDistCtx.fillStyle = "black";
-    yDistCtx.fillStyle = "black";
-
-    for (let i = 0; i < points.length; i++) {
-        xDistCtx.beginPath();
-        xDistCtx.rect(points[i].x, map(points[i].z, 0, zScale, 0, xDistCanvas.height), 2, 2);
-        xDistCtx.fill();
-
-        yDistCtx.beginPath();
-        yDistCtx.rect(map(points[i].z, 0, zScale, 0, yDistCanvas.width), points[i].y, 2, 2);
-        yDistCtx.fill();
-    }
-
-    xDistCtx.fillStyle = "red";
-    yDistCtx.fillStyle = "red";
-
-    for (let i = 0; i < rejectedPoints.length; i++) {
-        xDistCtx.beginPath();
-        xDistCtx.rect(rejectedPoints[i].x, map(rejectedPoints[i].z, 0, zScale, 0, xDistCanvas.height), 2, 2);
-        xDistCtx.fill();
-
-        yDistCtx.beginPath();
-        yDistCtx.rect(map(rejectedPoints[i].z, 0, zScale, 0, yDistCanvas.width), rejectedPoints[i].y, 2, 2);
-        yDistCtx.fill();
-    }
+    drawZPoints(points, xDistCanvas, { axis: "x", scale });
+    drawZPoints(points, yDistCanvas, { axis: "y", scale });
+    drawZPoints(rejectedPoints, xDistCanvas, { colour: "red", axis: "x", scale, clear: false });
+    drawZPoints(rejectedPoints, yDistCanvas, { colour: "red", axis: "y", scale, clear: false });
 
     if (checkZ.checked) {
         xDistCtx.strokeStyle = "red";
         xDistCtx.lineWidth = "3";
         xDistCtx.beginPath();
-        xDistCtx.moveTo(0, map(parseFloat(zthresh.value), 0, zScale, 0, xDistCanvas.height));
-        xDistCtx.lineTo(xDistCanvas.width, map(parseFloat(zthresh.value), 0, zScale, 0, xDistCanvas.height));
+        xDistCtx.moveTo(0, map(parseFloat(zthresh.value), 0, scale, 0, xDistCanvas.height));
+        xDistCtx.lineTo(xDistCanvas.width, map(parseFloat(zthresh.value), 0, scale, 0, xDistCanvas.height));
         xDistCtx.stroke();
 
         yDistCtx.strokeStyle = "red";
         yDistCtx.lineWidth = "3";
         yDistCtx.beginPath();
-        yDistCtx.moveTo(map(parseFloat(zthresh.value), 0, zScale, 0, yDistCanvas.width), 0);
-        yDistCtx.lineTo(map(parseFloat(zthresh.value), 0, zScale, 0, yDistCanvas.width), yDistCanvas.height);
+        yDistCtx.moveTo(map(parseFloat(zthresh.value), 0, scale, 0, yDistCanvas.width), 0);
+        yDistCtx.lineTo(map(parseFloat(zthresh.value), 0, scale, 0, yDistCanvas.width), yDistCanvas.height);
         yDistCtx.stroke();
     }
 
@@ -250,9 +247,6 @@ function drawContours(contours) {
 // factory function to create a DrawingDecoder of the selected version
 function createDecoder() {
 
-    const smoothingValue = parseFloat(smoothing.value);
-    const zThreshhold = parseFloat(zthresh.value);
-    const checkZThreshold = checkZ.checked;
     const focalLength = {
         x: parseFloat(focalLengthX.value),
         y: parseFloat(focalLengthY.value)
@@ -261,47 +255,42 @@ function createDecoder() {
         x: parseFloat(opticalCentreX.value),
         y: parseFloat(opticalCentreY.value)
     };
-    const k1Coefficient = parseFloat(k1.value);
     const tiltFactor = {
         x: parseFloat(tiltXFactor.value),
         y: parseFloat(tiltYFactor.value)
     };
 
-    return new DrawingDecoder(
-        smoothingValue,
-        zThreshhold,
-        checkZThreshold,
+    return new DrawingDecoder({
+        smooth: parseFloat(smoothing.value),
+        zThreshold: parseFloat(zthresh.value),
+        checkZ: checkZ.checked,
         focalLength,
         opticalCentre,
-        k1Coefficient,
+        k1: parseFloat(k1.value),
         tiltFactor
-    );
+    });
 }
 
 
 // write text from any 'provider' with toString() method, to given textarea, truncated at 'limit' characters
 function updateText(textArea, provider, limit = 10000) {
-    const result = truncate(provider.toString(inputId), limit);
-    textArea.value = result;
+    textArea.textContent = truncate(provider.toString(inputId), limit);
     textArea.scrollTop = textArea.scrollHeight;
 }
 
 
 // stop updating textareas and enable download buttons
 function downloadReady() {
-    clearInterval(decoderTextUpdateInterval);
     downloadXYCoordsBtn.removeAttribute("disabled");
-
-    if (datafileMode) return;                                       // return early if ball detection was not performed
-
-    clearInterval(detectorTextUpdateInterval);
-    downloadBallCoordsJS.removeAttribute("disabled");
+    if (!datafileMode) {
+        downloadBallCoordsJS.removeAttribute("disabled");
+    }
 }
 
 
 function clearTextareas() {
-    xyCoords.value = "";
-    ballCoords.value = "";
+    xyCoords.textContent = "";
+    ballCoords.textContent = "";
 }
 
 

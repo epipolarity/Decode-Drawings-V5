@@ -13,7 +13,7 @@ const triangleCenter = averagePoint([{ x: 0, y: 0 }, { x: 9, y: 0 }, { x: 9 / 2,
 // version 5
 export default class DrawingDecoder {
 
-    constructor(
+    constructor({
         smooth = 0,
         zThreshold = 0,
         checkZ = false,
@@ -21,10 +21,11 @@ export default class DrawingDecoder {
         opticalCentre = { x: 640, y: 360 },
         k1 = 0,
         tiltFactor = { x: 0, y: 0 }
-    ) {
+    } = {}) {
 
         this.collector = [];                // collector stores the decoded XY image coordinates for later export
         this.rejected = [];                 // points that were rejected due to zThreshold
+        this.lastBallsDetected = {};
 
         this.smooth = smooth;               // smoothing factor (0-1)
         this.zThreshold = zThreshold;       // z-threshold for deciding if pen is in contact with paper
@@ -53,8 +54,31 @@ export default class DrawingDecoder {
                 this.focalLength,
                 this.opticalCentre
             ));
-            balls[ballKey].centroid = averagePoint(balls[ballKey].contour);
-            balls[ballKey].radius = balls[ballKey].contour.reduce((sum, point) => sum + distance(point, balls[ballKey].centroid), 0) / balls[ballKey].contour.length;
+
+            const centroid = averagePoint(balls[ballKey].contour);
+            const radius = balls[ballKey].contour.reduce((sum, point) => sum + distance(point, centroid), 0) / balls[ballKey].contour.length;
+
+            if (this.lastBallsDetected[ballKey]) {
+
+                const { centroid: lastCentroid, radius: lastRadius } = this.lastBallsDetected[ballKey];
+
+                // apply smoothing as weighted average
+                balls[ballKey].radius = radius * (1 - this.smooth) + lastRadius * this.smooth;
+                balls[ballKey].centroid = {
+                    x: centroid.x * (1 - this.smooth) + lastCentroid.x * this.smooth,
+                    y: centroid.y * (1 - this.smooth) + lastCentroid.y * this.smooth
+                };
+
+            } else {
+                balls[ballKey].centroid = { x: centroid.x, y: centroid.y };
+                balls[ballKey].radius = radius;
+
+                this.lastBallsDetected[ballKey] = {};
+            }
+
+            this.lastBallsDetected[ballKey].centroid = { x: balls[ballKey].centroid.x, y: balls[ballKey].centroid.y };
+            this.lastBallsDetected[ballKey].radius = balls[ballKey].radius;
+
         }
 
         // estimate range to each of the three balls based on size and position
@@ -92,11 +116,6 @@ export default class DrawingDecoder {
 
         // udpate drawing if camera (pen) has moved 
         if (this.lastPosition && (x != this.lastPosition.x || y != this.lastPosition.y)) {
-
-            // apply smoothing as weighted average
-            x = x * (1 - this.smooth) + this.lastPosition.x * this.smooth;
-            y = y * (1 - this.smooth) + this.lastPosition.y * this.smooth;
-            z = z * (1 - this.smooth) + this.lastPosition.z * this.smooth;
 
             // if z exceeds threshold stop drawing - pen is off paper
             if (this.checkZ && z > this.zThreshold) {
