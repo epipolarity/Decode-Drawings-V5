@@ -113,7 +113,7 @@ function drawDatafile() {
 
         drawingDecoder = createDecoder();                       // get a decoder of the currently selected type
         for (const balls of ballsModule.balls) {
-            drawingDecoder.decode(drawingCtx, balls.contours);           // decode each set of balls and draw onto the drawing canvas
+            drawingDecoder.decode(balls.contours, drawingCtx);           // decode each set of balls and draw onto the drawing canvas
         }
 
         updateText(xyCoords, drawingDecoder);                   // display the XY image coordinates and make available for download as TXT
@@ -214,7 +214,7 @@ function processVideoFrame() {
 
     drawContours(contours);
 
-    drawingDecoder.decode(drawingCtx, contours);                               // decode each set of balls and draw onto the drawing canvas
+    drawingDecoder.decode(contours, drawingCtx);                               // decode each set of balls and draw onto the drawing canvas
 
     if (videoPlaying) {
         video.requestVideoFrameCallback(processVideoFrame);                 // repeat for each video frame

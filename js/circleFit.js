@@ -28,8 +28,10 @@ export function checkCircle(points, ctx, iterations = 10000) {
 
     }
 
-    drawCircle(ctx, bestCentre, bestRadius);
-    drawPoints(ctx, bestPoints);
+    if (ctx) {
+        drawCircle(ctx, bestCentre, bestRadius);
+        drawPoints(ctx, bestPoints);
+    }
 
     return bestError;
 

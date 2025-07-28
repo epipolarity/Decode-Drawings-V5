@@ -6,7 +6,7 @@
 
 js/ballDetectorAngular.js
 
-data/**
+data/**.js
 videos/**
 working_out/**
 results/**

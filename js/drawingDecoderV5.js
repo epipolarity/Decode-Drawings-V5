@@ -42,7 +42,7 @@ export default class DrawingDecoder {
 
 
     // takes a 2d context to draw onto and a 'balls' object describing the size and position of each ball in the current frame
-    decode(ctx, contours) {
+    decode(contours, ctx) {
 
         const balls = {};
 
@@ -127,13 +127,17 @@ export default class DrawingDecoder {
             // store x and y canvas integer pixel coordinates
             this.collector.push({ x: Math.round(x), y: Math.round(y), z });
 
-            // draw from last position to current position
-            ctx.save();
-            ctx.beginPath();
-            ctx.moveTo(this.lastPosition.x, this.lastPosition.y);
-            ctx.lineTo(x, y);
-            ctx.stroke();
-            ctx.restore();
+            if (ctx) {
+
+                // draw from last position to current position
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(this.lastPosition.x, this.lastPosition.y);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                ctx.restore();
+
+            }
 
         }
 
