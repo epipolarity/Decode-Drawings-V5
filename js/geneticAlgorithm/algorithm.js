@@ -16,9 +16,23 @@ let g = 0;
 const skipFrames = 10;
 
 const adam = new Individual({ neutrality: 2 });
-let lastScore = getScore(adam);
 
-const ctx = fitness.getContext("2d");
+adam.score = getScore(adam);
+printScore(adam, g);
+
+let lastScore = adam.score;
+let bestScore = adam.score;
+let bestParams = adam.toString();
+
+let ctx;
+let nodeMode = false;
+
+try {
+    ctx = fitness.getContext("2d");
+} catch {
+    nodeMode = true;
+    console.log("Running in Node without canvas");
+}
 
 let population = [adam];
 
@@ -26,13 +40,20 @@ while (population.length < populationSize) {
     population.push(new Individual({ parent: adam }));
 }
 
-animate();
+if (nodeMode) {
+    while (g < generations) {
+        evolve();
+    }
+    console.log(`Finished: ${g} generations`);
+} else {
+    evolve();
+}
 
-function animate() {
+function evolve() {
 
     if (g === generations) {
-        console.log(getScore(population[0]));
-        console.log(population[0].toString());
+        console.log(`Finished: ${g} generations`);
+        return;
     };
 
     const scoredPopulation = population
@@ -41,8 +62,6 @@ function animate() {
             return individual;
         })
         .sort((a, b) => a.score - b.score);
-
-    const bestScore = scoredPopulation[0].score;
 
     const sumExp = scoredPopulation.reduce((sum, individual) => sum + Math.exp(individual.score), 0);
     const normScores = scoredPopulation.map(individual => Math.exp(individual.score) / sumExp);
@@ -58,25 +77,41 @@ function animate() {
 
     population = newPopulation;
 
-    ctx.beginPath();
-    const start = {
-        x: map(g, 0, generations, 0, fitness.width),
-        y: map(lastScore, 0, 0.04, fitness.height, 0)
+    if (!nodeMode) {
+        ctx.beginPath();
+        const start = {
+            x: map(g, 0, generations, 0, fitness.width),
+            y: map(lastScore, 0, 0.04, fitness.height, 0)
+        }
+        ctx.moveTo(start.x, start.y);
     }
-    ctx.moveTo(start.x, start.y);
 
-    lastScore = bestScore;
+    lastScore = scoredPopulation[0].score;
     g++;
 
-    const end = {
-        x: map(g, 0, generations, 0, fitness.width),
-        y: map(lastScore, 0, 0.04, fitness.height, 0)
+    if (scoredPopulation[0].score < bestScore) {
+        bestScore = scoredPopulation[0].score;
+        bestParams = scoredPopulation[0].toString();
+        printScore(scoredPopulation[0], g);
     }
-    ctx.lineTo(end.x, end.y);
-    ctx.stroke();
 
-    requestAnimationFrame(animate);
+    if (!nodeMode) {
+        const end = {
+            x: map(g, 0, generations, 0, fitness.width),
+            y: map(lastScore, 0, 0.04, fitness.height, 0)
+        }
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
 
+        requestAnimationFrame(evolve);
+    }
+
+}
+
+
+
+function printScore(individual, generation) {
+    console.log(`Gen ${generation}: ${individual.score} - ${individual.toString()}`);
 }
 
 
