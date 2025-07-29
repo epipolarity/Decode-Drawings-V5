@@ -20,7 +20,8 @@ export default class DrawingDecoder {
         focalLength = { x: 615, y: 615 },
         opticalCentre = { x: 640, y: 360 },
         k1 = 0,
-        tiltFactor = { x: 0, y: 0 }
+        tiltFactor = { x: 0, y: 0 },
+        ballRadius = 3
     } = {}) {
 
         this.collector = [];                // collector stores the decoded XY image coordinates for later export
@@ -37,6 +38,8 @@ export default class DrawingDecoder {
         this.opticalCentre = opticalCentre;
         this.k1 = k1;
         this.tiltFactor = tiltFactor;
+
+        this.ballRadius = ballRadius;
 
     }
 
@@ -91,8 +94,8 @@ export default class DrawingDecoder {
         const camPositionHorizontal = this.#trilaterate(9, blueRange, greenRange);                      // 9cm is horizontal 'baseline' of 9cm triangle
 
         // map observed x and y values to canvas pixel range
-        let x = map(camPositionHorizontal.x, -12, 4, 150, 550);
-        let y = map((camPositionHorizontal.y + camPositionVertical.y) / 2, 17, 33, 150, 550);
+        let x = map(camPositionHorizontal.x, -12, 4, 250, 450);
+        let y = map((camPositionHorizontal.y + camPositionVertical.y) / 2, 17, 33, 250, 450);
 
         // sign is inverted - i maybe did something backwards
         let z = -camPositionVertical.x;
@@ -118,7 +121,7 @@ export default class DrawingDecoder {
         if (this.lastPosition && (x != this.lastPosition.x || y != this.lastPosition.y)) {
 
             // if z exceeds threshold stop drawing - pen is off paper
-            if (this.checkZ && z > this.zThreshold) {
+            if (this.checkZ && (z > this.zThreshold || Math.abs((z - this.lastPosition.z) / distance({ x, y, z }, this.lastPosition)) > 0.4)) {
                 this.lastPosition = null;
                 this.rejected.push({ x: Math.round(x), y: Math.round(y), z });
                 return;
@@ -149,7 +152,7 @@ export default class DrawingDecoder {
 
     // calculate distance from camera to given ball in cm using centroid and radius
     #getRange(ball) {
-        return 3 / (Math.sin(ball.radius));
+        return this.ballRadius / (Math.sin(ball.radius));
     }
 
 

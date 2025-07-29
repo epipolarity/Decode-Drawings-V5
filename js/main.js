@@ -78,11 +78,17 @@ datafiles.addEventListener("change", (e) => {
 
 
 [smoothing, zthresh, checkZ, focalLengthX, focalLengthY, opticalCentreX, opticalCentreY, k1,
-    tiltXFactor, tiltYFactor, checkFitCircle].forEach(element => element.addEventListener("change", () => {
+    tiltXFactor, tiltYFactor, ballRadius, checkFitCircle].forEach(element => element.addEventListener("change", () => {
         if (datafileMode) {
             drawDatafile();
         }
     }));
+
+reset.addEventListener("click", () => {
+    if (datafileMode) {
+        drawDatafile();
+    }
+})
 
 
 // download the decoded XY image coordinates in TXT format for the https://radufromfinland.com/decodeTheDrawings/test/ test page
@@ -267,7 +273,8 @@ function createDecoder() {
         focalLength,
         opticalCentre,
         k1: parseFloat(k1.value),
-        tiltFactor
+        tiltFactor,
+        ballRadius: parseFloat(ballRadius.value)
     });
 }
 
