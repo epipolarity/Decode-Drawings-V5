@@ -8,10 +8,10 @@ export default class Individual {
             cx = 640, cy = 360,
             k1 = 0,
             tx = 0, ty = 0,
-            fxScale = 0.1, fyScale = 0.1,
-            cxScale = 0.01, cyScale = 0.01,
+            fxScale = 1, fyScale = 1,
+            cxScale = 1, cyScale = 1,
             k1Scale = 1e-8,
-            txScale = 1, tyScale = 1,
+            txScale = 2, tyScale = 2,
             neutrality = 0,
             parent = {}
         } = {}) {
@@ -34,7 +34,7 @@ export default class Individual {
             const params = [fx, fy, cx, cy, k1, tx, ty];
             this.rates = [fxScale, fyScale, cxScale, cyScale, k1Scale, txScale, tyScale];
             this.paramCount = params.length;
-            this.switchRate = 1 / this.paramCount;
+            this.switchRate = 0.1 / this.paramCount;
             this.neutrality = neutrality;
 
             this.genotype = {

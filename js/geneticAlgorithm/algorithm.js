@@ -9,7 +9,17 @@ import { balls as balls4 } from "../../data/balls_4.js";
 import { balls as balls5 } from "../../data/balls_5.js";
 import { balls as balls6 } from "../../data/balls_6.js";
 
-const populationSize = 10;
+
+let ctx;
+let nodeMode = false;
+try {
+    ctx = fitness.getContext("2d");
+} catch {
+    nodeMode = true;
+    console.log("Running in Node without canvas");
+}
+
+const populationSize = 50;
 const generations = 50000;
 let g = 0;
 
@@ -22,17 +32,6 @@ printScore(adam, g);
 
 let lastScore = adam.score;
 let bestScore = adam.score;
-let bestParams = adam.toString();
-
-let ctx;
-let nodeMode = false;
-
-try {
-    ctx = fitness.getContext("2d");
-} catch {
-    nodeMode = true;
-    console.log("Running in Node without canvas");
-}
 
 let population = [adam];
 
@@ -91,7 +90,6 @@ function evolve() {
 
     if (scoredPopulation[0].score < bestScore) {
         bestScore = scoredPopulation[0].score;
-        bestParams = scoredPopulation[0].toString();
         printScore(scoredPopulation[0], g);
     }
 
