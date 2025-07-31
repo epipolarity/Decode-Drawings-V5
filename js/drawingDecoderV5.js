@@ -95,7 +95,8 @@ export default class DrawingDecoder {
         // update results if camera (pen) has moved 
         if (this.lastPosition && (x != this.lastPosition.x || y != this.lastPosition.y)) {
 
-            // if z exceeds threshold stop drawing - but store the position in the 'rejected' list for visualisation
+            // if z exceeds threshold - or if z changed too fast relative to overall xyz distance moved
+            // stop drawing - but store the position in the 'rejected' list for visualisation
             if (this.checkZ && (z > this.zThreshold || Math.abs((z - this.lastPosition.z) / distance({ x, y, z }, this.lastPosition)) > 0.4)) {
                 this.lastPosition = null;
                 this.rejected.push({ x: Math.round(x), y: Math.round(y), z });
