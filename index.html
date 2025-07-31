@@ -9,7 +9,13 @@
 
     <body>
 
-        <!-- input selectors -->
+        <!-- input selectors - for choosing video or data file input -->
+
+        <!-- 
+            to use video N.mp4 add video file N.mp4 to the ./videos/ directory
+            add <option value="N">N</option> to the select below 
+            reload and choose 'N' from the Video Input dropdown
+        -->
         <div class="flexrow">
             <label for="videos">Video Input</label>
             <select name="videos" id="videos">
@@ -20,8 +26,17 @@
                 <option value="4">4</option>
                 <option value="5">5</option>
                 <option value="6">6</option>
+                <!-- <option value="7">7</option> -->
             </select>
 
+            <!-- 
+                to rapidly try video N.mp4 with various decoder settings choose N in the Video Input dropdown (above)
+                once the video has been decoded, scroll to bottom of page (index.html) 
+                and click <Download Ball Coords Data File> to save the detected ball contours 
+                save the downloaded balls_N.js file into the ./data/ directory 
+                Add <option value="N">N</option> to the select below 
+                reload and choose 'N' from the Data File Input dropdown 
+            -->
             <label for="datafiles">Data File Input</label>
             <select name="datafiles" id="datafiles">
                 <option value="0" disabled selected>Choose a Data File</option>
@@ -31,17 +46,20 @@
                 <option value="4">4</option>
                 <option value="5">5</option>
                 <option value="6">6</option>
+                <!-- <option value="7">7</option> -->
             </select>
         </div>
 
         <!-- decoding settings -->
         <form>
 
+            <!-- temporal smoothing of the detected ball positions/sizes -->
             <div class="flexrow">
                 <label for="smoothing">Smoothing</label>
                 <input id="smoothing" type="number" value="0.9" step="0.02" min="0" max="0.98" />
             </div>
 
+            <!-- z/vertical position threshold to ignore points where the pen has lifted -->
             <div class="flexrow">
                 <label for="zthresh">Z Threshold</label>
                 <input id="zthresh" type="number" value="3.45" step="0.05" />
@@ -50,6 +68,7 @@
                 <input id="checkZ" type="checkbox" checked />
             </div>
 
+            <!-- focal length of camera in pixels -->
             <div class="flexrow">
                 <label for="focalLengthX">Focal Length X</label>
                 <input id="focalLengthX" type="number" value="615" step="1" />
@@ -58,6 +77,8 @@
                 <input id="focalLengthY" type="number" value="615" step="1" />
             </div>
 
+            <!-- optical center in pixels, used for radial distortion correction -->
+            <!-- and as a central position from which to measure angles to everything in the scene -->
             <div class="flexrow">
                 <label for="opticalCentreX">Optical Centre X</label>
                 <input id="opticalCentreX" type="number" value="664" step="0.2" />
@@ -66,11 +87,13 @@
                 <input id="opticalCentreY" type="number" value="389.8" step="0.2" />
             </div>
 
+            <!-- coefficient used in radial distortion correction -->
             <div class="flexrow">
                 <label for="k1">Distortion K1</label>
                 <input id="k1" type="number" value="3.19e-7" step="1e-8" />
             </div>
 
+            <!-- naive correction factors used to adjust x and y position if camera appears tilted -->
             <div class="flexrow">
                 <label for="tiltXFactor">Tilt X Factor</label>
                 <input id="tiltXFactor" type="number" value="150" step="10" />
@@ -79,6 +102,8 @@
                 <input id="tiltYFactor" type="number" value="250" step="1" />
             </div>
 
+            <!-- option to vary the assumed ball radius -->
+            <!-- we know the ball to be 3cm but possibly some other issue in the code means it works better if we take it to be 3.19cm-->
             <div class="flexrow">
                 <label for="ballRadius">Ball Radius (cm)</label>
                 <input id="ballRadius" type="number" value="3.19" step="0.005" />
@@ -90,25 +115,29 @@
                 <input id="checkFitCircle" type="checkbox" />
             </div>
 
+            <!-- reset values to default -->
             <input id="reset" type="reset" />
 
         </form>
 
-        <!-- decoder output -->
+        <!-- decoder drawing output -->
         <div>
             <div class="flexrow">
+                <!-- main drawing canvas -->
                 <canvas id="drawingCanvas" width="700" height="700" style="border: 1px solid"></canvas>
+
+                <!-- 'side' view - Y against Z -->
                 <canvas id="yDistCanvas" width="300" height="700" style="border: 1px solid"></canvas>
             </div>
+
+            <!-- 'front' view - X against Z -->
             <canvas id="xDistCanvas" width="700" height="300" style="border: 1px solid"></canvas>
         </div>
 
-        <!-- input video preview -->
+        <!-- original input video preview, with ball contour overlay -->
         <canvas id="inputCanvas" style="display: none"></canvas>
 
-
-
-        <!-- text outputs -->
+        <!-- text outputs and buttons for data output download -->
         <div class="flexrow">
             <div>
                 <textarea id="ballCoords" cols="35" rows="15"></textarea><br />

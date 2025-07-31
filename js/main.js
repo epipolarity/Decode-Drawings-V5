@@ -4,49 +4,50 @@ import DrawingDecoder from "./drawingDecoderV5.js";
 import { downloadText, truncate, map } from "./utils.js";
 import { checkCircle } from "./circleFit.js";
 
-let inputId;                    // input (video or data file) to be processed
-let datafileMode = false;       // is input a video or data file
+
+let inputId;                                                // input (video or data file) to be processed
+let datafileMode = false;                                   // is input a video or data file
 
 let videoPlaying = false;
 
-let ballDetector;               // class to detect balls in input video
-let drawingDecoder;             // class to decode drawing based on detected ball positions/sizes
+let ballContourDetector;                                    // class to detect ball contours in input video
+let drawingDecoder;                                         // class to decode drawing based on detected ball contours
 
-const video = document.createElement("video");
+const video = document.createElement("video");              // to load the input video if selected
 
-const inputCtx = inputCanvas.getContext("2d");
-const drawingCtx = drawingCanvas.getContext("2d");
+const inputCtx = inputCanvas.getContext("2d");              // to display the input video and detected contour overlay
+const drawingCtx = drawingCanvas.getContext("2d");          // to draw the decoded image
 
 
 // Event handlers
 
-// video loaded so begin processing of video frames
+// begin processing of video frames once video is loaded
 video.addEventListener("loadeddata", () => {
-    clearTextareas();                               // clear previous output
+    clearTextareas();                                       // clear previous output
     clearDrawingContext();
 
-    inputCanvas.style.display = "block";
+    inputCanvas.style.display = "block";                    // make video canvas visible
     inputCanvas.width = video.videoWidth;
     inputCanvas.height = video.videoHeight;
 
-    ballDetector = new BallContourDetector();
-    drawingDecoder = createDecoder();               // create decoder instance based on selected version
+    ballContourDetector = new BallContourDetector();        // create contour detector (because an old one will have history of previous input)
+    drawingDecoder = createDecoder();                       // create decoder instance based on selected version
 
     videoPlaying = true;
-    processVideoFrame();                            // start processing
+    processVideoFrame();                                    // start processing
 });
 
 
-// video finished so enable download buttons
+// enable download buttons once the video has finished to enable export of the results
 video.addEventListener("ended", () => {
     videoPlaying = false;
-    updateText(ballCoords, ballDetector);
+    updateText(ballCoords, ballContourDetector);
     updateText(xyCoords, drawingDecoder);
     downloadReady();
 });
 
 
-// video input selector changed
+// change video source when video selector is changed
 videos.addEventListener("change", (e) => {
     datafileMode = false;
 
@@ -61,7 +62,7 @@ videos.addEventListener("change", (e) => {
 });
 
 
-// data file input selector changed
+// trigger data file processing when data file input selector changed
 datafiles.addEventListener("change", (e) => {
     datafileMode = true;                                        // switch to data file input mode
 
@@ -77,13 +78,23 @@ datafiles.addEventListener("change", (e) => {
 });
 
 
-[smoothing, zthresh, checkZ, focalLengthX, focalLengthY, opticalCentreX, opticalCentreY, k1,
-    tiltXFactor, tiltYFactor, ballRadius, checkFitCircle].forEach(element => element.addEventListener("change", () => {
-        if (datafileMode) {
-            drawDatafile();
-        }
-    }));
+// add same event handler to all form inputs to trigger instand data file reprocessing
+[
+    smoothing,
+    zthresh, checkZ,
+    focalLengthX, focalLengthY,
+    opticalCentreX, opticalCentreY,
+    k1,
+    tiltXFactor, tiltYFactor,
+    ballRadius,
+    checkFitCircle
+].forEach(element => element.addEventListener("change", () => {
+    if (datafileMode) {
+        drawDatafile();
+    }
+}));
 
+// trigger data file reprocessing if the form is reset to default values
 reset.addEventListener("click", () => {
     if (datafileMode) {
         drawDatafile();
@@ -98,50 +109,51 @@ downloadXYCoordsBtn.addEventListener("click", () => {
 });
 
 
-// download the detected ball positions and sizes as a JS const export to save having to play the video each time
+// download the detected ball contours as a JS const export to save having to play the video each time
 downloadBallCoordsJS.addEventListener("click", () => {
-    const content = ballDetector.toString(inputId);
+    const content = ballContourDetector.toString(inputId);
     downloadText(content, 'balls_' + inputId + '.js', 'text/javascript');
 });
 
 
-// decode the selected data file input and draw to the canvas
+// process the selected data file input and draw the decoded image to the canvas
 function drawDatafile() {
 
-    // clear previous output
-    clearTextareas();
+    clearTextareas();                                                   // clear previous output
     clearDrawingContext();
-    setTimeout(clearInputContext, 250);                         // clear input video canvas with a delay in case it is still playing
+    setTimeout(clearInputContext, 250);                                 // clear input video canvas with a delay in case it is still playing
 
-    const ballsDataFile = `../data/balls_${inputId}.js`;        // path to the selected data file
+    const ballsDataFile = `../data/balls_${inputId}.js`;                // path to the selected data file
 
-    import(ballsDataFile).then(ballsModule => {                 // dynamic import to handle error if it doesn't exist
+    import(ballsDataFile).then(ballsModule => {                         // dynamic import to handle error if it doesn't exist
 
-        drawingDecoder = createDecoder();                       // get a decoder of the currently selected type
+        drawingDecoder = createDecoder();                               // get a new decoder with the current decoder settings
         for (const balls of ballsModule.balls) {
-            drawingDecoder.decode(balls.contours, drawingCtx);           // decode each set of balls and draw onto the drawing canvas
+            drawingDecoder.decode(balls.contours, drawingCtx);          // decode each set of ball contours and draw onto the drawing canvas
         }
 
-        updateText(xyCoords, drawingDecoder);                   // display the XY image coordinates and make available for download as TXT
-        downloadReady();
+        updateText(xyCoords, drawingDecoder);                           // display the XY image coordinates 
+        downloadReady();                                                // and make available for download as TXT
 
-        if (checkFitCircle.checked) {
+        if (checkFitCircle.checked) {                                   // check how well the drawing matches a perfect circle
 
             let status = "Not enough points!";
-            if (drawingDecoder.collector.length > 2) {
+            if (drawingDecoder.collector.length > 2) {                  // the checkCircle function will draw the circle to the canvas
                 const circleFit = checkCircle(drawingDecoder.collector, drawingCtx);
                 status = circleFit.toFixed(4);
             }
             drawingCtx.save();
             drawingCtx.fillStyle = "red";
             drawingCtx.font = "30px arial";
-            drawingCtx.fillText(status, 10, 40);
+            drawingCtx.fillText(status, 10, 40);                        // add the circle fit error on the canvas to enable instant feedback when tweaking parameters
             drawingCtx.restore();
         }
 
+        // draw the decoded XYZ values as XZ and YZ plots too, to enable tweaking parameters 
+        // to ensure the  decoded image is as flat as possible to set a suitable Z threshold
         drawZDistributions(drawingDecoder.collector, drawingDecoder.rejected);
 
-    }).catch(error => {
+    }).catch(error => {                                                 // the requested data file couldn't be loaded (or there was an error processing it)
 
         console.error(error);
         alert(`error processing balls_${inputId}.js - check console for more info`);
@@ -151,76 +163,18 @@ function drawDatafile() {
 }
 
 
-function drawZPoints(points, canvas, {
-    colour = "black",
-    axis = "x",
-    scale = 1,
-    clear = true
-} = {}) {
-
-    const ctx = canvas.getContext("2d");
-
-    if (clear) {
-        ctx.fillStyle = "white";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
-    ctx.fillStyle = colour;
-
-    for (const point of points) {
-        ctx.beginPath();
-        if (axis === "x") {
-            ctx.rect(point.x, map(point.z, 0, scale, 0, canvas.height), 2, 2);
-        } else {
-            ctx.rect(map(point.z, 0, scale, 0, canvas.width), point.y, 2, 2);
-        }
-        ctx.fill();
-    }
-
-}
-
-
-function drawZDistributions(points, rejectedPoints = [], scale = 10) {
-
-    const xDistCtx = xDistCanvas.getContext("2d");
-    const yDistCtx = yDistCanvas.getContext("2d");
-
-    drawZPoints(points, xDistCanvas, { axis: "x", scale });
-    drawZPoints(points, yDistCanvas, { axis: "y", scale });
-    drawZPoints(rejectedPoints, xDistCanvas, { colour: "red", axis: "x", scale, clear: false });
-    drawZPoints(rejectedPoints, yDistCanvas, { colour: "red", axis: "y", scale, clear: false });
-
-    if (checkZ.checked) {
-        xDistCtx.strokeStyle = "red";
-        xDistCtx.lineWidth = "3";
-        xDistCtx.beginPath();
-        xDistCtx.moveTo(0, map(parseFloat(zthresh.value), 0, scale, 0, xDistCanvas.height));
-        xDistCtx.lineTo(xDistCanvas.width, map(parseFloat(zthresh.value), 0, scale, 0, xDistCanvas.height));
-        xDistCtx.stroke();
-
-        yDistCtx.strokeStyle = "red";
-        yDistCtx.lineWidth = "3";
-        yDistCtx.beginPath();
-        yDistCtx.moveTo(map(parseFloat(zthresh.value), 0, scale, 0, yDistCanvas.width), 0);
-        yDistCtx.lineTo(map(parseFloat(zthresh.value), 0, scale, 0, yDistCanvas.width), yDistCanvas.height);
-        yDistCtx.stroke();
-    }
-
-}
-
-
-// process the selected video file input and draw to canvas
+//  process the selected video file input and draw the decoded image to the canvas
 function processVideoFrame() {
 
     const { width, height } = inputCanvas;
     inputCtx.drawImage(video, 0, 0, width, height);                         // draw the video to the video input canvas
 
-    const imageData = inputCtx.getImageData(0, 0, width, height);           // get the frame image data and perform ball detection
-    const { contours } = ballDetector.detect(imageData);
+    const imageData = inputCtx.getImageData(0, 0, width, height);           // get the frame image data and perform ball contour detection
+    const { contours } = ballContourDetector.detect(imageData);
 
     drawContours(contours);
 
-    drawingDecoder.decode(contours, drawingCtx);                               // decode each set of balls and draw onto the drawing canvas
+    drawingDecoder.decode(contours, drawingCtx);                            // decode each set of contours and draw onto the drawing canvas
 
     if (videoPlaying) {
         video.requestVideoFrameCallback(processVideoFrame);                 // repeat for each video frame
@@ -228,6 +182,7 @@ function processVideoFrame() {
 }
 
 
+// draw the detected ball contour/outlines overlaid on the video canvas to check accuracy
 function drawContours(contours) {
 
     inputCtx.lineWidth = 2;
@@ -250,7 +205,7 @@ function drawContours(contours) {
 }
 
 
-// factory function to create a DrawingDecoder of the selected version
+// factory function to create a DrawingDecoder using the chosen parameters from the HTML form
 function createDecoder() {
 
     const focalLength = {
@@ -276,6 +231,76 @@ function createDecoder() {
         tiltFactor,
         ballRadius: parseFloat(ballRadius.value)
     });
+}
+
+
+// function to draw the XZ and YZ views of the 3d points from the drawing decoder
+// rejectedPoints are above the threshold/considered 'off the page' and if provided are drawn in red
+// scale is the range of z values that fill the respective canvas
+// scale = 10 means z values from 0-10 cover the full height/width of the respective canvas
+function drawZDistributions(points, rejectedPoints = [], scale = 10) {
+
+    // draw points on the appropriate canvas for each axis    
+    drawZPoints(points, xDistCanvas, { axis: "x", scale });
+    drawZPoints(points, yDistCanvas, { axis: "y", scale });
+
+    // do the same for rejected points, but draw red and do not clear previous points (drawn immediately prior, above)
+    drawZPoints(rejectedPoints, xDistCanvas, { colour: "red", axis: "x", scale, clear: false });
+    drawZPoints(rejectedPoints, yDistCanvas, { colour: "red", axis: "y", scale, clear: false });
+
+    // if checking z threshold, draw the z threshold on each canvas as a thick red line
+    if (checkZ.checked) {
+
+        // get contexts of the canvases to the side and below the main drawing canvas
+        const xDistCtx = xDistCanvas.getContext("2d");
+        const yDistCtx = yDistCanvas.getContext("2d");
+
+        xDistCtx.strokeStyle = "red";
+        xDistCtx.lineWidth = "3";
+        xDistCtx.beginPath();
+        xDistCtx.moveTo(0, map(parseFloat(zthresh.value), 0, scale, 0, xDistCanvas.height));
+        xDistCtx.lineTo(xDistCanvas.width, map(parseFloat(zthresh.value), 0, scale, 0, xDistCanvas.height));
+        xDistCtx.stroke();
+
+        yDistCtx.strokeStyle = "red";
+        yDistCtx.lineWidth = "3";
+        yDistCtx.beginPath();
+        yDistCtx.moveTo(map(parseFloat(zthresh.value), 0, scale, 0, yDistCanvas.width), 0);
+        yDistCtx.lineTo(map(parseFloat(zthresh.value), 0, scale, 0, yDistCanvas.width), yDistCanvas.height);
+        yDistCtx.stroke();
+
+    }
+
+}
+
+
+// draw the provided 3d points on the specified canvas showing z against the specified 'axis'
+function drawZPoints(points, canvas, {
+    colour = "black",
+    axis = "x",
+    scale = 1,
+    clear = true
+} = {}) {
+
+    const ctx = canvas.getContext("2d");
+
+    if (clear) {                                                        // option to not clear the canvas when adding extra points
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    ctx.fillStyle = colour;
+
+    for (const point of points) {                                       // plot z values against the specified axis (x or y)
+        ctx.beginPath();                                                // on the given canvas
+        if (axis === "x") {
+            ctx.rect(point.x, map(point.z, 0, scale, 0, canvas.height), 2, 2);
+        } else {
+            ctx.rect(map(point.z, 0, scale, 0, canvas.width), point.y, 2, 2);
+        }
+        ctx.fill();
+    }
+
 }
 
 

@@ -17,20 +17,15 @@ function round(value, precision) {
 }
 
 
-// convert an array of strings to a string with each element on a new line
+// convert an array of points to a string with each XY on a new line
 // used for exporting XY image coords text file
-function arrayToTextLines(array) {
-    return array.join("\n");
-}
-
-
 function pointsArrayToTextLines(array) {
     return array.map(point => point.x + " " + point.y).join("\n");
 }
 
 
 // convert an object to a javascript module that exports that object as a constant
-// used for exporting ball detection result to JS modules for dynamic import
+// used for exporting ball contour detection result to JS modules for dynamic import
 // so we don't have to watch the video every time we tweak the algorithms
 function objectToJSConst(object, name) {
     return `export const ${name} = ${JSON.stringify(object, null, 2)};`;
@@ -38,7 +33,7 @@ function objectToJSConst(object, name) {
 
 
 // convert a string to a blob and trigger a text file download
-// borrowed heavily from https://www.tutorialspoint.com/how-to-create-and-save-text-file-in-javascript
+// borrowed from https://www.tutorialspoint.com/how-to-create-and-save-text-file-in-javascript
 function downloadText(content, filename, type = 'text/plain') {
     const link = document.createElement("a");
     const file = new Blob([content], { type });
@@ -59,11 +54,17 @@ function truncate(text, limit) {
 }
 
 
+// pythagoras distance calculation
 function distance(p1, p2) {
     return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
 }
 
 
+// work out the angle from the optical axis to a point in the image in x and y
+// using simple trigonometry
+// focal length is the adjacent side
+// point offset from optical centre is the opposite side
+// angle is arctangent of opposite/adjacent
 function cartesianToAngular(point, focalLength, opticalCentre) {
     const { x, y } = point;
     const { x: fx, y: fy } = focalLength;
@@ -94,7 +95,6 @@ function averagePoint(points) {
 export {
     map,
     round,
-    arrayToTextLines,
     pointsArrayToTextLines,
     objectToJSConst,
     downloadText,
