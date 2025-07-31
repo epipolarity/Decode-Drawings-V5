@@ -87,7 +87,7 @@ Without this, we are only tracking the position of the camera, and not accountin
 - **Ball Radius**: Default 3.19 (cm)  
 Though we know the balls to have a radius of 3cm, I found that I got better results by making this a variable and adjusting it up to 3.19cm. This implies some error in my code/maths that I have not yet identified.
 - **Check Circle Fit**:  
-This only works when decoding data files, and only makes sense when doing it for data file #1, but this will calculate a best fit circle for the current decoded drawing and display an error value indicating how close the drawing is to perfectly fitting it.  
+This only works when decoding data files, and only makes sense when doing it for data file #1, but this will calculate a best fit circle for the current decoded drawing and display an error value indicating how far the drawing is from perfectly fitting it.  
 The circle fitting algorithm is non-deterministic so you will get slightly different results for the same input, so try it a few times on and off, or with different parameters to get a 'feel' for the true value!
 
 
