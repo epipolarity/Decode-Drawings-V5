@@ -25,7 +25,7 @@ export default class DrawingDecoder {
         zThreshold = 0,                                             // how high pen must appear to raise in Z to be considered 'off the canvas'
         checkZ = false,                                             // whether to check Z or not
         focalLength = { x: 615, y: 615 },                           // focal length in pixels for x and y axes
-        opticalCentre = { x: 640, y: 360 },                         // the location on the image sensor where a light ray lands after passing through the lens without diffraction
+        opticalCentre = { x: 640, y: 360 },                         // the location on the image sensor where a light ray lands after passing through the lens without refraction
         k1 = 0,                                                     // radial distortion correction coefficient
         tiltFactor = { x: 0, y: 0 },                                // correction factors to apply when the pen is detected to deviate from vertical
         ballRadius = 3                                              // tuning this parameter gave a performance boost. even though we know the value to be 3 in reality - 3.19 gave best results
