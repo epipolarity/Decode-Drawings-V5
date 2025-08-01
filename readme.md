@@ -70,7 +70,7 @@ These parameters are preset with good default values that I have determined thro
 - **Smoothing**: Default 0.9  
 Smoothing is applied to the calculated centroid and radius of the balls in subsequent frames, before further processing is applied.  
 This is the weight of effect of the previous frame on the current frame. So if smoothing is 0 the previous frame has no influence, and if smoothing was 1 the current frame would have no influence (and so nothing would ever change). 
-- **Z Threshold**: Default 3.45 (cm - relative to what, I'm not sure!)  
+- **Z Threshold**: Default 3.45 (cm - height of the camera relative to the green and blue balls)  
 The decoder calculates an XYZ position for the tip of the pen at each frame. The Z Threshold allows you to set a Z level above which to ignore the pen as it is likely not in contact with the drawing surface.
 - **Focal Length**: Default X=615, Y=615 (pixels)  
 It's possible for lenses to have different focal lengths in different directions, though the difference is normally very small. This relates to how wide or narrow the field of view is, and is used in the decoder to work out the angle between things in the scene and the camera's optical axis. The value of 615 pixels was calculated based on the known size of, and distance to, the balls in frame 1 of the first video, and I haven't yet found a better value!
@@ -151,6 +151,8 @@ The steps in this process are:
 5. Use trilateration to work out the position of the camera in the horizontal plane, i.e. its position over the drawing surface, using the distances to blue and green balls found in #4
 6. Use trilateration to work out the position of the camera in the vertical plane, i.e. its height over the drawing surface, using the distances to the red ball, and mean of distances to the blue and green balls.
 7. Estimate the pitch and roll of the camera to estimate the relative position of the pen tip which is not directly below the camera when the pen is tilted.
+8. Check if z exceeded the z threshold, or if z changed too fast, to determine if the pen was on the drawing surface or not
+9. Map the calculated xy coordinates from cm units to pixels on the canvas
 
 ### 2.1 - Radial Distorion Correction
 
@@ -225,3 +227,52 @@ To calculate the Z position of the camera, we use the same approach as above, bu
 Now distance $b$ is that to the red ball, and distance $c$ is the average of distances to the blue and green balls. $z$ is the vertical distance below the blue and green balls, and since we noted above that the camera will always be higher than these balls this explains why my $z$ value is always negative, which my code comments show was previously put down to an error in the code, or getting something backwards. Well this was it!
 
 <img src="images/trilateration_3d_z.png" height="500" />
+
+### 2.7 - Estimate pitch and roll of camera
+
+My methods for estimating the tilt of the camera, and therefore the pen, and therefore the XY offset to the pen tip from the camera position, are a little crude, but they were good enough to improve the accuracy of the decoded images somewhat.
+
+**Pitch**
+
+To work out if the camera is tilted forwards/backwards, we first estimate the angle that we would expect the red ball to be at if the camera was facing straight forwards, using:
+
+$$\theta = sin^{-1}(\frac{opp}{hyp})$$
+
+Where $\theta$ is the expected angle, $opp$ is the known height of the red ball above the triangle center, and $hyp$ is the range/distance to the red ball.
+
+We then compare this to the actual position in $y$ at which we see the red ball (which is already in radians) and multiply the difference by a fine-tuned correction factor to get a useful $y$ correction value.
+
+I notice in the code I seem to be treating the height of the triangle as 9cm, when it is in fact 7.79cm. Putting 7.79 in as the value now makes the results much worse, and tweaking the y-correction factor doesn't seem to help, so I'll leave this error in for now!
+
+**Roll**
+
+To work out if the camera is tilted sideways, we calculate the average angle from the centre of the three balls to each ball.
+
+We compare this to the expected average angle (which isn't zero because the angles are taken from horizontal rather than vertical).
+
+<img src="images/expected_angles.png" width="500" />
+
+As shown above, the expected average angle is 30°
+
+$$\frac{30 + 150 - 90}{3} = 30° = \frac{\pi}{6}$$
+
+This is fine so long as the camera doesn't roll too far and the angles wrap round!
+
+The difference between this expected angle, and the observed angle is then multiplied by another fine-tuned correction factor to get a useful $x$ correction value.
+
+### 2.8 - Check the Z value to determine contact with the drawing surface
+
+We do two checks to determine if the pen is in contact with the drawing surface.
+
+1. Check if Z is above a fixed threshold value
+2. Check if Z changed too much relative to total XYZ movement ('too much' is currently a hard coded value of 0.4)
+
+Well the second one is almost what it does. I just noticed that my distance function ignores Z so it is really only comparing Z movement to XY movement. 
+
+The idea is that if the pen moved up or down by more than the amount of noise in the measurement, then whatever Z it was at at the start or end of that movement, it won't have drawn anything while it was going up or down. 
+
+If the coordinates pass these two checks then they are added to the 'collector' - an array that holds the coordinates of the decoded drawing. If they fail either check they are added to a 'rejected' array which is still available to the UI to plot, to show what was filtered out.
+
+### 2.9 - Mapping the coordinates from real world cm to canvas pixels
+
+For this bit I simply console logged all coordinates, and scanned up and down visually to get the rough min and max values, and mapped those to where i wanted them to appear on the canvas. I later tweaked these values a bit to get uniform scaling and add a bit of a border, but it was as simple as that.

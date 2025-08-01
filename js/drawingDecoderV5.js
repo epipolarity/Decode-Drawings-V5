@@ -60,37 +60,21 @@ export default class DrawingDecoder {
 
         // trilaterate camera position vertically and horizontally
         // this.#trilaterate takes the distance between two points (balls), and the range to each of them
-        const camPositionVertical = this.#trilaterate(triangleHeight, redRange, (blueRange + greenRange) / 2);  
+        const camPositionVertical = this.#trilaterate(triangleHeight, redRange, (blueRange + greenRange) / 2);
         const camPositionHorizontal = this.#trilaterate(9, blueRange, greenRange);                                  // <-- 9 (cm) is horizontal 'baseline' of 9cm triangle
 
-        // map observed x and y values to canvas pixel range
+        // map observed x and y values to canvas pixel range, with a large border to give room in case novel inputs encode larger drawings
         let x = map(camPositionHorizontal.x, -12, 4, 250, 450);
         let y = map(camPositionHorizontal.y, 17, 33, 250, 450);
 
-        // in the vertical trilateration, the x axis corresponds to vertical. The sign appears to be inverted, so I may have got the ordering of something backwards somewhere
+        // in the vertical trilateration, the x axis corresponds to vertical. The sign appears to be inverted, so I may have got the ordering of something backwards somewhere - see the readme for an explanation!
         let z = -camPositionVertical.x;
 
-        // calculate what angle we expect to look up at to see the red ball at the calculated range
-        const expectedAngleToRed = Math.asin((9 - triangleCenter.y) / redRange);
+        // make a correction to y based on camera pitch using the red ball
+        y += this.#pitchCorrection(balls.red, redRange);
 
-        // because ball positions are all in radians now, we can easily calculate the difference to work out (roughly) if the pen is tilted forwards or backwards
-        y += (-balls.red.centroid.y - expectedAngleToRed) * this.tiltFactor.y;
-
-        // to work out if the pen is rotated left or right, see if the triangle of balls appears to be rotated clockwise or widdershins
-
-        // first get the centroid of the three balls
-        const triangleCentroid = averagePoint([balls.red.centroid, balls.green.centroid, balls.blue.centroid]);
-
-        // then the angle from the centroid to each ball
-        const redAngle = Math.atan2(balls.red.centroid.y - triangleCentroid.y, balls.red.centroid.x - triangleCentroid.x);
-        const blueAngle = Math.atan2(balls.blue.centroid.y - triangleCentroid.y, balls.blue.centroid.x - triangleCentroid.x);
-        const greenAngle = Math.atan2(balls.green.centroid.y - triangleCentroid.y, balls.green.centroid.x - triangleCentroid.x);
-
-        // then compare against the expected angles and take an average of the deviation
-        const meanRotation = ((redAngle - expectedAngles.red) + (blueAngle - expectedAngles.blue) + (greenAngle - expectedAngles.green)) / 3;
-
-        // if pen is tilted left, the tip is further right than the camera position
-        x += meanRotation * this.tiltFactor.x;
+        // make a correction to x based on camera roll using all balls
+        x += this.#rollCorrection(balls);
 
         // update results if camera (pen) has moved 
         if (this.lastPosition && (x != this.lastPosition.x || y != this.lastPosition.y)) {
@@ -124,6 +108,42 @@ export default class DrawingDecoder {
         this.lastPosition = { x, y, z };
 
     }
+
+
+    // use the location of the red ball to determine if the camera is pitched up or down
+    // and return a correction value for the camera y coordinate
+    #pitchCorrection(redBall, redRange) {
+
+        // calculate what angle we expect to look up at to see the red ball at the calculated range
+        const expectedAngleToRed = Math.asin((9 - triangleCenter.y) / redRange);
+
+        // because ball positions are all in radians now, we can easily calculate the difference to work out (roughly) if the pen is tilted forwards or backwards
+        return (-redBall.centroid.y - expectedAngleToRed) * this.tiltFactor.y;
+
+    }
+
+
+    // use the location of all balls in the image to determine if the camera is rolled left or right
+    // by checking if the triangle of balls appears to be rotated clockwise or widdershins
+    // and return a correction value for the camera x coordinate
+    #rollCorrection(balls) {
+
+        // first get the centroid of the three balls
+        const triangleCentroid = averagePoint([balls.red.centroid, balls.green.centroid, balls.blue.centroid]);
+
+        // then the angle from the centroid to each ball
+        const redAngle = Math.atan2(balls.red.centroid.y - triangleCentroid.y, balls.red.centroid.x - triangleCentroid.x);
+        const blueAngle = Math.atan2(balls.blue.centroid.y - triangleCentroid.y, balls.blue.centroid.x - triangleCentroid.x);
+        const greenAngle = Math.atan2(balls.green.centroid.y - triangleCentroid.y, balls.green.centroid.x - triangleCentroid.x);
+
+        // then compare against the expected angles and take an average of the deviation
+        const meanRotation = ((redAngle - expectedAngles.red) + (blueAngle - expectedAngles.blue) + (greenAngle - expectedAngles.green)) / 3;
+
+        // if pen is tilted left, the tip is further right than the camera position
+        return meanRotation * this.tiltFactor.x;
+
+    }
+
 
     // takes a set of ball outline 'contours' which correspond to raw pixel coordinates in the video data
     // apply radial distortion correction and convert to fisheye model using (mathematically questionable) angular coordinates
