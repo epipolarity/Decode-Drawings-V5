@@ -1,5 +1,29 @@
 # Radu's 'Decode the Drawings' Coding Competition - Final Submission
 
+# Contents
+1. [Introduction](#introduction)
+2. [About me](#about-me)
+3. [My Results](#my-results)
+4. [Usage](#usage)  
+    - [Video Decoding](#video-decoding)
+    - [Data file Decoding](#data-file-decoding)
+    - [Decoding parameters/options](#decoding-parametersoptions)  
+5. [My Solution(s)](#my-solutions)
+    - [Stage 1 - Ball Detection](#stage-1---ball-detection)
+    - [Stage 2 - Decoding](#stage-2---decoding)  
+        1. [Radial Distortion Correction](#21---radial-distorion-correction)
+        2. [Convert to angular coordinates](#22---convert-to-angular-coordinates)
+        3. [Find centroid and radius of balls](#23---find-the-centroid-and-radius-of-each-ball)
+        4. [Find distance to each ball](#24---find-the-distance-of-each-ball-from-the-camera)
+        5. [Find XY using trilateration](#25---work-out-xy-camera-position-using-trilateration)
+        6. [Find Z using trilateration](#26---work-out-z-camera-position-using-trilateration)
+        7. [Estimate pitch and roll](#27---estimate-pitch-and-roll-of-camera)
+        8. [Check Z for pen contact](#28---check-the-z-value-to-determine-contact-with-the-drawing-surface)
+        9. [Mapping paper coordinates to canvas pixels](#29---mapping-the-coordinates-from-real-world-cm-to-canvas-pixels)
+
+# Introduction
+
+**Competition website and video**  
 <https://radufromfinland.com/decodeTheDrawings/>  
 <https://www.youtube.com/watch?v=bZ8uSzZv0ew>
 
@@ -11,6 +35,21 @@ Something like this:
 
 <img src="images/visual_documentation.png" alt="Visual description of the challenge" title="Visual description of the challenge" />
 
+The amount of effort that Radu went to to conceive of and execute this competition, along with all the other top quality free educational material on his YouTube channel is mind-boggling.
+
+# About me
+
+Though I didn't intend initially to get dragged quite so far into this competition, it did appeal to me as I have long had an interest in computer vision.
+
+I feel like I should disclose that I studied Computer Science and AI at the University of Sussex between 1999 and 2004, and both my BSc and MSc dissertations were computer vision related. I was far from a brilliant student, but I enjoyed it.
+
+I've had a 20+ year career in technology-related roles, though I was only ever employed as a coder until 2007. My job for the last 17 years has been general 'technical support' for a small engineering consultancy based in Cambridge, UK, and though coding is not part of the job description, it makes the job easier!
+
+I learned Java at Sussex, and VB in my first coding job. It wasn't until the covid pandemic that I started to learn and use JavaScript on a regular basis.
+
+I'm not afraid of a large coding project, and have deployed several complex desktop and web apps at work, but I lack the knowledge of how actual software development is done in the industry, and certainly no-one else at my work has the faintest idea...
+
+From what I have seen of the software devlopment world, I'm probably in a career sweet spot right where I am.
 
 # My Results
 
@@ -276,3 +315,17 @@ If the coordinates pass these two checks then they are added to the 'collector' 
 ### 2.9 - Mapping the coordinates from real world cm to canvas pixels
 
 For this bit I simply console logged all coordinates, and scanned up and down visually to get the rough min and max values, and mapped those to where i wanted them to appear on the canvas. I later tweaked these values a bit to get uniform scaling and add a bit of a border, but it was as simple as that.
+
+# The Genetic Algorithm
+
+I did implement a genetic algorithm, partly because I really wanted to (nostalgia for the early 2000s), and partly because I had said that I would in the discord channel, and definitely not because I thought it would work very well (it didn't).
+
+The GA is kind of a spin-off standalone project, which you can find in the `./js/geneticAlgorithm` directory.
+
+It's no longer applicable to this project because I added parameters to the decoder which are not present in the GA, and I only ran in once because it was so slow and I ran out of time.
+
+Here is a plot of the progress over time. It looks better than it is, because I normalised the different data series to be in the range 0-1 to fit better in the graph, and I plotted the error on a logarithmic scale, so the diminishing gains in fitness are greatly exaggerated the lower they get!
+
+<img src="./images/ga_results.png" >
+
+I'm running out of time to document this, but the code is well commented, and the results are available in full in the `./results` directory!
