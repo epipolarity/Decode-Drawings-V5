@@ -138,3 +138,90 @@ This method works well despite the obvious issues that there is no way for half 
 
 There are certainly better and more generalised algorithms for calculating the contour of a shape, but I enjoyed the process of developing this one myself, and this is a common theme throughout this project and my work in general!
 
+## Stage 2 - Decoding
+
+This is the process of taking the detected ball outline pixel coordinates, and processing them to infer the 3D position of the camera, and attached pen tip.
+
+The steps in this process are:
+
+1. Apply radial distortion correction to the pixel coordinates, to correct for barrel/pinchusion distortion
+2. Convert these undistorted pixel coordinates to angular coordinates, to remove the elongation effect
+3. Find the centroid and radius of each 'un-elongated' ball outline
+4. Use the radius of each ball to estimate its distance from the camera
+5. Use trilateration to work out the position of the camera in the horizontal plane, i.e. its position over the drawing surface, using the distances to blue and green balls found in #4
+6. Use trilateration to work out the position of the camera in the vertical plane, i.e. its height over the drawing surface, using the distances to the red ball, and mean of distances to the blue and green balls.
+7. Estimate the pitch and roll of the camera to estimate the relative position of the pen tip which is not directly below the camera when the pen is tilted.
+
+### 2.1 - Radial Distorion Correction
+
+I use the simplest version of radial distortion correction (division model), as described here https://en.wikipedia.org/wiki/Distortion_(optics) using a single coefficient to remove the largest effects of any radial distortion. 
+
+Radial distortion is a lens effect caused by the optics of the lens used in the camera, resulting in differing levels of magnification of the image, dependent on distance from the optical centre. Removing this distortion should get us closer to a pinhole type camera, where the only distortion is elongation caused by the pinhole model itself.
+
+This was applied to each point in each ball's outline, and is a very slight adjustment that can be seen to make quite a difference to the final output.
+
+### 2.2 - Convert to angular coordinates
+
+I use basic trigonometry to convert from pixel coodrinates to angular coordinates. Using the identity: 
+
+$$tan(\theta) = \frac{opp}{adj}$$
+
+We just have to rearrange to:
+
+$$\theta = tan^{-1}(\frac{opp}{adj})$$
+
+Where the opposite length is the distance of each point from the optical centre, and the adjacent length is the camera focal length.
+
+### 2.3 - Find the centroid and radius of each ball
+
+Now that the points on the ball outline are free from elongation and lens distortion, we find the centre by taking the average of all points in the outline. This is valid so long as the points are evenly spaced. There is no mechanism in the outline detection algorithm for enforcing that the points are evenly spaced, such as repulsive or attractive forces used in some implementations, but because points are only able to move perpendicular to the mean of all points in the outline the spacing is preserved.
+
+We then find the radius by taking the average distance from each point in the outline to the centroid calculated above.
+
+### 2.4 - Find the distance of each ball from the camera
+
+This is where the angular coordinates method really makes things simple. In the previous, image plane pixel-based method the range was a function of the apparent size of the ball and also its location in the image, but with this method it is purely a function of its apparent size, which is given by the radius calculated above.
+
+Due to being a little squeezed for time, I shall re-use my pencil scribblings to illustrate this!
+
+I was surprised when the answer popped out so simply, as evidenced by the fact that I started by including a lot of variables that turned out to be completely redundant.
+
+The step skipped in the illustration is identifying that the right angle triangle with angle $a$, hypoteneuse $R$ and opposite length, ball radius $3$ is all that is needed, and $R$ can be found using the identity:
+
+$$sin(\theta) = \frac{opp}{hyp}$$
+
+Into which we substitute our known values:
+
+$$sin(a) = \frac{3}{R}$$
+
+and rearrange to find $R$ (range, or distance to the ball):
+
+$$R = \frac{3}{sin(a)}$$
+
+In practice I replaced $3$ with a tunable variable for ball radius, which gave better results with a slightly higher value, even though we know $3$ (cm) to be the actual radius.
+
+The triangle is a right angle triangle, because the observed edges of each ball define a ray from the camera viewpoint to a point tangent to the ball surface, and such tangents are always perpendicular to the centroid.
+
+<img src="working_out/v5/PXL_20250713_145153438~2.jpg" height="500"/>
+
+### 2.5 - Work out XY camera position using trilateration
+
+My trilateration method for XY position has not changed since version 3, so I will re-use the same illustration of the derivation, which was initially also scrawled in pencil.
+
+<img src="images/trilateration.jpg" height="500" />
+
+I will add to that by including the following diagram to illustrate better how this was used in the horizontal plane. 
+
+Distances $b$ and $c$ are the 'ranges' $R$ to each ball as found in 2.4 above, distance $a$ is the known 9cm between balls, and $x$ and $y$ are the horizontal position of the camera relative to the green ball (erroneously shown red in the image above).
+
+<img src="images/trilateration_3d_xy.png" height="500" />
+
+Drawing it out like this (on the day of the extended competition deadline), I immediately see the shortcomings of this method which only truly works if the camera is at the same height as the blue and green balls. We know for a fact that the camera is usually about 4cm higher up than these balls, and ths value changes with tilt and when the pen is lifted, but it's still close!
+
+### 2.6 - Work out Z camera position using trilateration
+
+To calculate the Z position of the camera, we use the same approach as above, but rotate the triangles 90 degrees:
+
+Now distance $b$ is that to the red ball, and distance $c$ is the average of distances to the blue and green balls. $z$ is the vertical distance below the blue and green balls, and since we noted above that the camera will always be higher than these balls this explains why my $z$ value is always negative, which my code comments show was previously put down to an error in the code, or getting something backwards. Well this was it!
+
+<img src="images/trilateration_3d_z.png" height="500" />
