@@ -99,6 +99,42 @@ Versions 1-3 can be found here (<https://github.com/epipolarity/Decode-Drawings>
 
 Version 4 can be found here (<https://github.com/epipolarity/Decode-Drawings-V4>) but this was a failed attempt to use PnP pose estimation, and it never seemed worthwhile to document it because it didn't work. This was the only version for which I used any external libraries and consulted with LLMs to understand the maths. I feel like every time I attempt to get my head around linear algebra I get a little closer, but then need a few years recovery before trying again...
 
-This is Version 5, which is quite closely related to Version 3 but hopefully with a slightly more mathematical approach.
+This is Version 5, which is quite closely related to Version 3 but with an approach based on angles relative to the camera optical axis, rather than pixel coordinates in the image plane.
 
-I have a lot to add here...
+The reason for this change was that I was not happy with my method in V3 for correcting for the elongation effect, observed on the image plane in a pinhole camera as objects move futher from the centre.
+
+The difference between the two camera models can be seen in the below image.
+
+<img src="images/pinhole_vs_fisheye.png" alt="Fisheye vs Rectilinear model" title="Fisheye vs Rectilinear model" />
+
+The red line at the bottom represents the standard image plane. This is the image sensor in most cameras, and it has the desirable property that lines which appear straight in the real world (the edges of a building, for example) always also appear straight in the image. This model also has the undesirable property that objects appear elongated the further they are from the optical centre. Notice that the mid point of each ball is not projected to the midpoint of where the edges of the ball appear in the image plane. 
+
+This was the reason my V3 decoder struggled, as I did not have a good method for compensating for this elongation. I had a bad method, based on correction factors, based on observervation, but not based on geometry.
+
+The green line in the image above represents my solution to this, which I believe is related to the fisheye camera project model. This does not preserve straight lines in an image, but has the desirable property that the mid point of the ball is projected to the mid point of where the edges of the ball are projected on the image plane. In this model image coordinates are treated as angles from the optical centre, rather than cartesian coordinates on a plane. 
+
+We still have to convert from cartesian pixel coordinates to these angular coordinates, but this is possible if we know (or estimate, or fine-tune through trial and error) the camera focal length and optical centre, and much simpler than what I was doing with correction factors previously.
+
+## Stage 1 - Ball Detection
+
+The first stage of the process is to detect the balls in each video frame. In versions 1-4 I used the same approach, described here (<https://github.com/epipolarity/Decode-Drawings#2-ball-detection>) based entirely on the Marker Detection algorithm described by Radu here: <https://www.youtube.com/watch?v=jy-Mxbt0zww>.
+
+For this version, I gave the detection algorithm a slight upgrade - it now outputs the outline of each ball as a series of 2D pixel coordinates, rather than just outputting the centroid and radius.
+
+This was necessary for two reasons.
+
+1. As described above, the balls are elongated in the frame, not round, and the center of the ball is not at the center of the elongated shape (it's somewhere nearer the optical centre).
+2. To correct for radial lens distortion and this elongation effect we need to treat each part of the ball outline differently, as they all have different distances from the optical centre, and a series of points around the edge of the ball is one way to do this.
+
+See the difference in detection methods in the animated gif below, and note how the prevoius method does not conform to the subtle elongation of the balls (most notable in green and blue).
+
+<img src="images/ball_outlines.gif" />
+
+The detection algorithm starts with Radu's marker detection method to establish a good estimate of the centroid and radius, but rather than stop there it uses these as a starting point for a process to iteratively refine the outline. 
+
+For each point in the outline, it searches a 7x7 pixel area centred on that point, and counts the number of pixels in that area that exceed the given colour strength threshold. If more than half the points exceed the threshold the point is deemed to be too close to the ball centre, and it moves outwards (relative to the mean position of all points) and if fewer than half the points exceed the threshold it moves towards the centre, hopefully settling in a location where the number of points the exceed the threshold balances those that do not, and we take this to be the edge of the ball.
+
+This method works well despite the obvious issues that there is no way for half of the pixels in an odd number (49) to balance the other half, and that actually slightly fewer than half the pixels in a square centred on the edge of a circle (or ellipse) would actually be contained by that circle (or ellipse)!
+
+There are certainly better and more generalised algorithms for calculating the contour of a shape, but I enjoyed the process of developing this one myself, and this is a common theme throughout this project and my work in general!
+
