@@ -36,11 +36,11 @@ Something like this:
 
 <img src="images/visual_documentation.png" alt="Visual description of the challenge" title="Visual description of the challenge" />
 
-The amount of effort that Radu went to to conceive of and execute this competition, along with all the other top quality free educational material on his YouTube channel is mind-boggling.
+The amount of effort that Radu went to to conceive of and execute this competition, along with all the other top quality free educational material on his YouTube channel, is mind-boggling.
 
 # About me
 
-Though I didn't intend initially to get dragged quite so far into this competition, it did appeal to me as I have long had an interest in computer vision.
+Though I didn't intend to get dragged quite so far into this competition, it did appeal to me as I have long had an interest in computer vision.
 
 I feel like I should disclose that I studied Computer Science and AI at the University of Sussex between 1999 and 2004, and both my BSc and MSc dissertations were computer vision related. I was far from a brilliant student, but I enjoyed it.
 
@@ -50,7 +50,7 @@ I learned Java at Sussex, and VB in my first coding job. It wasn't until the cov
 
 I'm not afraid of a large coding project, and have deployed several complex desktop and web apps at work, but I lack the knowledge of how actual software development is done in the industry, and certainly no-one else at my work has the faintest idea...
 
-From what I have seen of the software devlopment world, I'm probably in a career sweet spot right where I am.
+From what I have seen of the software devlopment world, I'm probably in a career sweet-spot right where I am.
 
 # My Results
 
@@ -81,9 +81,9 @@ You can't stop a video once it's started, unless you close/refresh the page, or 
 
 Changing any of the decoding parameters will have no effect once the video decoding has started.
 
-You may need to scroll to the bottom of the page to see the video, which will also show overlaid outlines of the detected balls.
+You'll need to scroll to the bottom of the page to see the video, which will also show overlaid outlines of the detected balls.
 
-Once the video has reached the end, you can scroll further down, below the video to see 2 textareas. The left textarea shows the detected ball outline coordinates, and a button to download this. The textarea only shows a truncated preview, so use the button to download the full version, and use it as described below in `Data file Decoding` for more rapid decoding, to test different parameters.
+Once the video has reached the end, you can scroll further down, below the video to see two textareas. The left textarea shows the detected ball outline coordinates, and a button to download this. The textarea only shows a truncated preview, so use the button to download the full version, and use it as described below in `Data file Decoding` for more rapid decoding, to test different parameters.
 
 The right textarea shows the pixel coordinates of every point in the decoded image, and this can be downloaded for submission to the test page (<https://radufromfinland.com/decodeTheDrawings/test/index.html>) or however you choose!
 
@@ -105,7 +105,7 @@ These parameters and options will be described in more detail further below, but
 
 Changing these parameters while a video is being decoded will have no effect until the next video is loaded. They also have no effect until a data file is loaded, but changing them will automatically trigger reloading the current data file if one is selected, which gives the illusion of them having an instant effect in that case.
 
-These parameters are preset with good default values that I have determined through manual trial and error, normally starting from sensible estimates.
+These parameters are preset with good default values that I have determined through manual trial and error, starting from sensible estimates.
 
 - **Smoothing**: Default 0.9  
 Smoothing is applied to the calculated centroid and radius of the balls in subsequent frames, before further processing is applied.  
@@ -113,7 +113,8 @@ This is the weight of effect of the previous frame on the current frame. So if s
 - **Z Threshold**: Default 3.45 (cm - height of the camera relative to the green and blue balls)  
 The decoder calculates an XYZ position for the tip of the pen at each frame. The Z Threshold allows you to set a Z level above which to ignore the pen as it is likely not in contact with the drawing surface.
 - **Focal Length**: Default X=615, Y=615 (pixels)  
-It's possible for lenses to have different focal lengths in different directions, though the difference is normally very small. This relates to how wide or narrow the field of view is, and is used in the decoder to work out the angle between things in the scene and the camera's optical axis. The value of 615 pixels was calculated based on the known size of, and distance to, the balls in frame 1 of the first video, and I haven't yet found a better value!
+It's possible for lenses to have different focal lengths in different directions, though the difference is normally very small. This relates to how wide or narrow the field of view is, and is used in the decoder to work out the angle between things in the scene and the camera's optical axis. The value of 615 pixels was calculated based on the known size of, and distance to, the balls in frame 1 of the first video, and I haven't yet found a better value!  
+<img src="./images/calculating_focal_length.png" width="300" />
 - **Optical Centre**: Default X=664, Y=389.8 (pixels)  
 This is the coordinates of the pixel on the sensor which captures light which passed directly though the lens without any deviation from a straight path (refraction)  
 It should be the middle, but lenses and sensors are not always placed in cameras to this level of precision
@@ -128,7 +129,8 @@ Without this, we are only tracking the position of the camera, and not accountin
 Though we know the balls to have a radius of 3cm, I found that I got better results by making this a variable and adjusting it up to 3.19cm. This implies some error in my code/maths that I have not yet identified.
 - **Check Circle Fit**:  
 This only works when decoding data files, and only makes sense when doing it for data file #1, but this will calculate a best fit circle for the current decoded drawing and display an error value indicating how far the drawing is from perfectly fitting it.  
-The circle fitting algorithm is non-deterministic so you will get slightly different results for the same input, so try it a few times on and off, or with different parameters to get a 'feel' for the true value!
+The circle fitting algorithm is non-deterministic so you will get slightly different results for the same input, so try it a few times on and off, or with different parameters to get a 'feel' for the true value!  
+At the last minute before the submission deadline, I found that I could get a much lower circle error with different parameters, but the other drawings didn't look quite so good, and the score on the test page was a couple of % lower, so I discarded them, but there may still be room for improvement by simply tweaking all these values.
 
 
 # My Solution(s)
@@ -151,9 +153,9 @@ The red line at the bottom represents the standard image plane. This is the imag
 
 This was the reason my V3 decoder struggled, as I did not have a good method for compensating for this elongation. I had a bad method, based on correction factors, based on observervation, but not based on geometry.
 
-The green line in the image above represents my solution to this, which I believe is related to the fisheye camera projection model. This does not preserve straight lines in an image, but has the desirable property that the mid point of the ball is projected to the mid point of where the edges of the ball are projected on the image 'plane' (actually the surface of a sphere). In this model image coordinates are treated as angles from the optical centre, rather than cartesian coordinates on a plane. 
+The green line in the image above represents my solution to this, which I believe is related to the fisheye camera projection model. This does not preserve straight lines in an image, but has the desirable property that the mid point of the ball is projected to the mid point of where the edges of the ball are projected on the image 'plane' (actually the surface of a sphere). In this model, image coordinates are treated as angles from the optical centre, rather than cartesian coordinates on a plane. 
 
-We still have to convert from cartesian pixel coordinates to these angular coordinates, but this is possible if we know (or estimate, or fine-tune through trial and error) the camera focal length and optical centre, and much simpler than what I was doing with correction factors previously.
+We still have to convert from cartesian pixel coordinates to these angular coordinates, but this is possible if we know (or estimate) the camera focal length and optical centre, and much simpler than what I was doing with correction factors previously.
 
 ## Stage 1 - Ball Detection
 
@@ -189,7 +191,7 @@ The steps in this process are:
 3. Find the centroid and radius of each 'un-elongated' ball outline
 4. Use the radius of each ball to estimate its distance from the camera
 5. Use trilateration to work out the position of the camera in the horizontal plane, i.e. its position over the drawing surface, using the distances to blue and green balls found in #4
-6. Use trilateration to work out the position of the camera in the vertical plane, i.e. its height over the drawing surface, using the distances to the red ball, and mean of distances to the blue and green balls.
+6. Use trilateration to work out the position of the camera in the vertical plane, i.e. its height over the drawing surface, using the distance to the red ball, and mean of distances to the blue and green balls.
 7. Estimate the pitch and roll of the camera to estimate the relative position of the pen tip which is not directly below the camera when the pen is tilted.
 8. Check if z exceeded the z threshold, or if z changed too fast, to determine if the pen was on the drawing surface or not
 9. Map the calculated xy coordinates from cm units to pixels on the canvas
@@ -216,7 +218,7 @@ Where the opposite length is the distance of each point from the optical centre,
 
 ### 2.3 - Find the centroid and radius of each ball
 
-Now that the points on the ball outline are free from elongation and lens distortion, we find the centre by taking the average of all points in the outline. This is valid so long as the points are evenly spaced. There is no mechanism in the outline detection algorithm for enforcing that the points are evenly spaced, such as repulsive or attractive forces used in some implementations, but because points are only able to move perpendicular to the mean of all points in the outline the spacing is preserved.
+Now that the points on the ball outline are free from elongation and lens distortion, we find the centre by taking the average of all points in the outline. This is valid so long as the points are evenly spaced. There is no mechanism in the outline detection algorithm for enforcing that the points are evenly spaced, such as repulsive or attractive forces used in some implementations but, because points are only able to move in the direction of the mean of all points in the outline, the spacing is preserved.
 
 We then find the radius by taking the average distance from each point in the outline to the centroid calculated above.
 
@@ -236,19 +238,19 @@ Into which we substitute our known values:
 
 $$sin(a) = \frac{3}{R}$$
 
-and rearrange to find $R$ (range, or distance to the ball):
+and rearrange to find $R$ (range, or distance, to the ball):
 
 $$R = \frac{3}{sin(a)}$$
 
 In practice I replaced $3$ with a tunable variable for ball radius, which gave better results with a slightly higher value, even though we know $3$ (cm) to be the actual radius.
 
-The triangle is a right angle triangle, because the observed edges of each ball define a ray from the camera viewpoint to a point tangent to the ball surface, and such tangents are always perpendicular to the centroid.
+The triangle is a right angle triangle, because the observed edges of each ball define a ray from the camera viewpoint to a point tangent to the ball surface, and such tangents are always perpendicular to the centroid of a circle/sphere.
 
 <img src="images/PXL_20250713_145153438~2.jpg" height="500"/>
 
 ### 2.5 - Work out XY camera position using trilateration
 
-My trilateration method for XY position has not changed since version 3, so I will re-use the same illustration of the derivation, which was initially also scrawled in pencil.
+My trilateration method for XY position has not changed since version 3, so I will re-use the same illustration of the derivation, which was initially also scrawled in pencil (full size image available in `./images/`).
 
 <img src="images/trilateration.jpg" height="500" />
 
@@ -258,13 +260,13 @@ Distances $b$ and $c$ are the 'ranges' $R$ to each ball as found in 2.4 above, d
 
 <img src="images/trilateration_3d_xy.png" height="500" />
 
-Drawing it out like this (on the day of the extended competition deadline), I immediately see the shortcomings of this method which only truly works if the camera is at the same height as the blue and green balls. We know for a fact that the camera is usually about 4cm higher up than these balls, and ths value changes with tilt and when the pen is lifted, but it's still close!
+Drawing it out like this (on the day of the extended competition deadline), I immediately see the shortcomings of this method which only truly works if the camera is at the same height as the blue and green balls. We know for a fact that the camera is usually about 4cm higher up than these balls, and this value changes with tilt and when the pen is lifted, but it's still close!
 
 ### 2.6 - Work out Z camera position using trilateration
 
 To calculate the Z position of the camera, we use the same approach as above, but rotate the triangles 90 degrees:
 
-Now distance $b$ is that to the red ball, and distance $c$ is the average of distances to the blue and green balls. $z$ is the vertical distance below the blue and green balls, and since we noted above that the camera will always be higher than these balls this explains why my $z$ value is always negative, which my code comments show was previously put down to an error in the code, or getting something backwards. Well this was it!
+Now distance $b$ is that to the red ball, and distance $c$ is the average of distances to the blue and green balls. $z$ is the vertical distance below the blue and green balls, and since we noted above that the camera will always be higher than these balls this explains why my $z$ value is always negative, which my code comments show was previously put down to getting something backwards. Well this was it!
 
 <img src="images/trilateration_3d_z.png" height="500" />
 
@@ -323,10 +325,12 @@ I did implement a genetic algorithm, partly because I really wanted to (nostalgi
 
 The GA is kind of a spin-off standalone project, which you can find in the `./js/geneticAlgorithm` directory.
 
-It's no longer applicable to this project because I added parameters to the decoder which are not present in the GA, and I only ran in once because it was so slow and I ran out of time.
+It's no longer applicable to this project because I later added more parameters to the decoder which are not present in the GA, and I only ran it once because it was so slow and I ran out of time.
 
 Here is a plot of the progress over time. It looks better than it is, because I normalised the different data series to be in the range 0-1 to fit better in the graph, and I plotted the error on a logarithmic scale, so the diminishing gains in fitness are greatly exaggerated the lower they get!
 
 <img src="./images/ga_results.png" >
 
-I'm running out of time to document this, but the code is well commented, and the results are available in full in the `./results` directory!
+I don't have time to document this further before the submission deadline, but the code is well commented, and the results are available in full in the `./results` directory for anyone interested.
+
+I will just add that this was the one part of the whole project that I needed to run outside of the browser. I modified the code slightly so it could be run in either the browser or as a module in node.js, because at least in node I could leave it running, whereas in the browser it would stop everytime the screen went off or to the lock screen.
