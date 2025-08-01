@@ -20,6 +20,7 @@
         7. [Estimate pitch and roll](#27---estimate-pitch-and-roll-of-camera)
         8. [Check Z for pen contact](#28---check-the-z-value-to-determine-contact-with-the-drawing-surface)
         9. [Mapping paper coordinates to canvas pixels](#29---mapping-the-coordinates-from-real-world-cm-to-canvas-pixels)
+6. [The Genetic Algorithm](#the-genetic-algorithm)
 
 # Introduction
 
