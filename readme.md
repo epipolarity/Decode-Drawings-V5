@@ -202,7 +202,7 @@ In practice I replaced $3$ with a tunable variable for ball radius, which gave b
 
 The triangle is a right angle triangle, because the observed edges of each ball define a ray from the camera viewpoint to a point tangent to the ball surface, and such tangents are always perpendicular to the centroid.
 
-<img src="working_out/v5/PXL_20250713_145153438~2.jpg" height="500"/>
+<img src="images/PXL_20250713_145153438~2.jpg" height="500"/>
 
 ### 2.5 - Work out XY camera position using trilateration
 
