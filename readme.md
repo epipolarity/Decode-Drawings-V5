@@ -42,7 +42,7 @@ The amount of effort that Radu went to to conceive of and execute this competiti
 
 Though I didn't intend to get dragged quite so far into this competition, it did appeal to me as I have long had an interest in computer vision.
 
-I feel like I should disclose that I studied Computer Science and AI at the University of Sussex between 1999 and 2004, and both my BSc and MSc dissertations were computer vision related. I was far from a brilliant student, but I enjoyed it.
+I feel like I should disclose that I studied Computer Science and AI at the University of Sussex between 2000 and 2004, and both my BSc and MSc dissertations were computer vision related. I was far from a brilliant student, but I enjoyed it.
 
 I've had a 20+ year career in technology-related roles, though I was only ever employed as a coder until 2007. My job for the last 17 years has been general 'technical support' for a small engineering consultancy based in Cambridge, UK, and though coding is not part of the job description, it makes the job easier!
 
